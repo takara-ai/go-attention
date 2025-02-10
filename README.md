@@ -4,22 +4,193 @@
 
 From the Frontier Research Team at takara.ai we present the first pure Go implementation of attention mechanisms and transformer layers, designed for high performance and ease of use.
 
----
+## Installation
+
+```bash
+go get github.com/takara-ai/go-attention
+```
 
 ## Quick Start
 
-The fastest way to test the transformer layer is to run our example script:
+Run our comprehensive examples:
 
 ```bash
 # Get the module
 go get github.com/takara-ai/go-attention
 
-# Create example.go with the contents from our example file
-# Then run:
-go run example.go
+# Run the examples
+go run api_examples.go
 ```
 
-This will demonstrate a transformer layer processing a sequence of random input tokens and show you the transformation results.
+## API Documentation
+
+### Core Types
+
+```go
+type Vector []float64           // Represents a 1D vector of float64 values
+type Matrix []Vector           // Represents a 2D matrix of float64 values
+```
+
+### 1. Basic Dot-Product Attention
+
+The simplest form of attention mechanism. Useful for basic sequence processing tasks.
+
+```go
+import "github.com/takara-ai/go-attention/attention"
+
+// Create query-key-value setup
+query := attention.Vector{1.0, 0.0, 1.0, 0.0}  // Pattern to search for
+keys := attention.Matrix{
+    {1.0, 0.0, 1.0, 0.0},  // Similar to query
+    {0.0, 1.0, 0.0, 1.0},  // Different from query
+    {0.5, 0.5, 0.5, 0.5},  // Neutral pattern
+}
+values := attention.Matrix{
+    {1.0, 2.0},  // Value for similar key
+    {3.0, 4.0},  // Value for different key
+    {5.0, 6.0},  // Value for neutral key
+}
+
+// Compute attention
+output, weights, err := attention.DotProductAttention(query, keys, values)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Output will be a weighted combination of values based on query-key similarity
+// Weights will show how much attention each key received
+```
+
+### 2. Multi-Head Attention
+
+More sophisticated attention mechanism that can capture different types of relationships in parallel.
+
+```go
+import "github.com/takara-ai/go-attention/attention"
+
+// Configure multi-head attention
+config := attention.MultiHeadConfig{
+    NumHeads:    4,        // Number of parallel attention heads
+    DModel:      64,       // Size of input/output embeddings
+    DKey:        16,       // Size per head (DModel/NumHeads)
+    DValue:      16,       // Size per head (DModel/NumHeads)
+    DropoutRate: 0.1,      // For regularization
+}
+
+// Create the attention module
+mha, err := attention.NewMultiHeadAttention(config)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Process sequences (batched input)
+batchSize, seqLen := 2, 3  // Process 2 sequences, each with 3 tokens
+
+// Create input matrices [batchSize × seqLen × DModel]
+queries := make(attention.Matrix, batchSize*seqLen)
+keys := make(attention.Matrix, batchSize*seqLen)
+values := make(attention.Matrix, batchSize*seqLen)
+
+// Initialize your matrices with actual data...
+
+// Process through multi-head attention
+output, err := mha.Forward(queries, keys, values)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+### 3. Full Transformer Layer
+
+Complete transformer layer with self-attention and feed-forward network.
+
+```go
+import (
+    "github.com/takara-ai/go-attention/transformer"
+    "github.com/takara-ai/go-attention/attention"
+)
+
+// Configure transformer layer
+config := transformer.TransformerConfig{
+    DModel:      64,       // Size of token embeddings
+    NumHeads:    4,        // Number of attention heads
+    DHidden:     256,      // Size of feed-forward hidden layer
+    DropoutRate: 0.1,      // For regularization
+}
+
+// Create transformer layer
+layer, err := transformer.NewTransformerLayer(config)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Create input sequence [seq_len × d_model]
+seqLen := 3
+input := make(attention.Matrix, seqLen)
+for i := range input {
+    input[i] = make(attention.Vector, config.DModel)
+    // Fill with your embedding data...
+}
+
+// Process through transformer
+output, err := layer.Forward(input)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+## Example Output
+
+When running the examples, you'll see:
+
+1. **Dot-Product Attention**:
+
+   ```
+   Query: [1 0 1 0]
+   Attention Weights: [0.506 0.186 0.307]  // Shows focus on similar patterns
+   Output: [2.601 3.601]                   // Weighted combination of values
+   ```
+
+2. **Multi-Head Attention**:
+
+   ```
+   Input dimensions: [2 batches × 3 tokens × 64 features]
+   Output shape: [6×64]
+   ```
+
+3. **Transformer Layer**:
+   ```
+   Input shape: [3×64]
+   Output shape: [3×64]
+   ```
+
+## Common Use Cases
+
+1. **Text Processing**:
+
+   - Sequence-to-sequence translation
+   - Document summarization
+   - Sentiment analysis
+
+2. **Time Series**:
+
+   - Financial forecasting
+   - Sensor data analysis
+   - Anomaly detection
+
+3. **Structured Data**:
+   - Graph node embedding
+   - Feature interaction modeling
+   - Recommendation systems
+
+## Performance Considerations
+
+- Matrix operations are optimized for CPU
+- Memory allocations are minimized
+- Batch processing for better throughput
+- No external dependencies
+
+For more detailed examples, see `api_examples.go` in the repository.
 
 ## Why go-attention?
 
@@ -76,123 +247,6 @@ The module provides a foundation for building various attention-based systems:
 - Batched operations for improved performance
 - Comprehensive error handling
 - Example code for quick start
-
-## Installation
-
-```bash
-go get github.com/takara-ai/go-attention
-```
-
-## Usage
-
-### Simple Dot-Product Attention
-
-```go
-import "github.com/takara-ai/go-attention/attention"
-
-query := attention.Vector{1.0, 0.0, 1.0, 0.0}
-keys := attention.Matrix{
-    {1.0, 0.0, 1.0, 0.0}, // Similar to query
-    {0.0, 1.0, 0.0, 1.0}, // Different from query
-    {0.5, 0.5, 0.5, 0.5}, // Neutral
-}
-values := attention.Matrix{
-    {1.0, 2.0, 3.0, 4.0},
-    {5.0, 6.0, 7.0, 8.0},
-    {9.0, 10.0, 11.0, 12.0},
-}
-
-output, weights, err := attention.DotProductAttention(query, keys, values)
-if err != nil {
-    log.Fatal(err)
-}
-```
-
-### Multi-Head Attention
-
-```go
-import "github.com/takara-ai/go-attention/attention"
-
-config := attention.MultiHeadConfig{
-    NumHeads:    4,
-    DModel:      64,
-    DKey:        16,  // DModel / NumHeads
-    DValue:      16,  // DModel / NumHeads
-    DropoutRate: 0.1,
-}
-
-mha, err := attention.NewMultiHeadAttention(config)
-if err != nil {
-    log.Fatal(err)
-}
-
-output, err := mha.Forward(queries, keys, values)
-if err != nil {
-    log.Fatal(err)
-}
-```
-
-### Full Transformer Layer
-
-```go
-// This example demonstrates how to use the transformer layer from the go-attention module.
-// It creates a simple transformer layer and processes a sequence of random input tokens.
-package main
-
-import (
-    "fmt"
-    "log"
-    "math/rand"
-    "github.com/takara-ai/go-attention/transformer"
-    "github.com/takara-ai/go-attention/attention"
-)
-
-func main() {
-    // Create transformer layer with configuration:
-    // - DModel: 64 (size of each token's embedding vector)
-    // - NumHeads: 4 (parallel attention heads for better feature capture)
-    // - DHidden: 256 (size of feed-forward network's hidden layer)
-    // - DropoutRate: 0.1 (regularization to prevent overfitting)
-    layer, err := transformer.NewTransformerLayer(transformer.TransformerConfig{
-        DModel: 64, NumHeads: 4, DHidden: 256, DropoutRate: 0.1,
-    })
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    // Create a sequence of 3 tokens, each represented by a 64-dimensional vector
-    // This could represent word embeddings, image patches, or any other sequence data
-    // Values are randomly initialized between -1 and 1 for this example
-    input := make(attention.Matrix, 3)
-    for i := range input {
-        input[i] = make(attention.Vector, 64)
-        for j := range input[i] {
-            input[i][j] = rand.Float64()*2 - 1
-        }
-    }
-
-    // Process the sequence through the transformer layer
-    // The transformer will:
-    // 1. Apply self-attention to capture relationships between tokens
-    // 2. Process through a feed-forward network
-    // 3. Apply layer normalization and residual connections
-    if output, err := layer.Forward(input); err != nil {
-        log.Fatal(err)
-    } else {
-        // Compare the first 4 dimensions of input and output
-        // to see how the transformer has modified the sequence
-        fmt.Printf("Input (first 4 dims): %v\nOutput (first 4 dims): %v\n",
-            input[0][:4], output[0][:4])
-    }
-}
-```
-
-## Performance Considerations
-
-- The implementation uses efficient matrix operations
-- Memory allocations are minimized where possible
-- Batch processing is supported for improved throughput
-- No external dependencies means predictable performance
 
 ## Roadmap
 
