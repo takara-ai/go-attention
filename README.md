@@ -196,39 +196,6 @@ This module was created to provide a clean, efficient, and dependency-free imple
 - **Embedded Systems**: Predictable resource usage and minimal memory allocations
 - **Production Systems**: Comprehensive error handling and type safety for robust production deployments
 
-## Potential Applications
-
-The module provides a foundation for building various attention-based systems:
-
-- **Natural Language Processing**:
-
-  - Text summarization
-  - Machine translation
-  - Question-answering systems
-  - Sentiment analysis
-  - Named entity recognition
-
-- **Time Series Analysis**:
-
-  - Financial market prediction
-  - Weather forecasting
-  - Anomaly detection
-  - Traffic prediction
-  - Energy consumption forecasting
-
-- **Computer Vision** (with appropriate input encoding):
-
-  - Image classification
-  - Object detection
-  - Image captioning
-  - Visual attention models
-
-- **Multimodal Systems**:
-  - Text-to-image systems
-  - Cross-modal retrieval
-  - Multimodal fusion
-  - Audio-visual processing
-
 ## Features
 
 - Efficient dot-product attention mechanism
