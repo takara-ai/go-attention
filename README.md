@@ -6,6 +6,21 @@ From the Frontier Research Team at takara.ai we present the first pure Go implem
 
 ---
 
+## Quick Start
+
+The fastest way to test the transformer layer is to run our example script:
+
+```bash
+# Get the module
+go get github.com/takara-ai/go-attention
+
+# Create example.go with the contents from our example file
+# Then run:
+go run example.go
+```
+
+This will demonstrate a transformer layer processing a sequence of random input tokens and show you the transformation results.
+
 ## Why go-attention?
 
 This module was created to provide a clean, efficient, and dependency-free implementation of attention mechanisms in Go. It's particularly useful for:
@@ -120,25 +135,55 @@ if err != nil {
 ### Full Transformer Layer
 
 ```go
+// This example demonstrates how to use the transformer layer from the go-attention module.
+// It creates a simple transformer layer and processes a sequence of random input tokens.
+package main
+
 import (
+    "fmt"
+    "log"
+    "math/rand"
     "github.com/takara-ai/go-attention/transformer"
+    "github.com/takara-ai/go-attention/attention"
 )
 
-config := transformer.TransformerConfig{
-    DModel:      64,   // Model dimension
-    NumHeads:    4,    // Number of attention heads
-    DHidden:     256,  // Hidden dimension in feed-forward network
-    DropoutRate: 0.1,
-}
+func main() {
+    // Create transformer layer with configuration:
+    // - DModel: 64 (size of each token's embedding vector)
+    // - NumHeads: 4 (parallel attention heads for better feature capture)
+    // - DHidden: 256 (size of feed-forward network's hidden layer)
+    // - DropoutRate: 0.1 (regularization to prevent overfitting)
+    layer, err := transformer.NewTransformerLayer(transformer.TransformerConfig{
+        DModel: 64, NumHeads: 4, DHidden: 256, DropoutRate: 0.1,
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
 
-layer, err := transformer.NewTransformerLayer(config)
-if err != nil {
-    log.Fatal(err)
-}
+    // Create a sequence of 3 tokens, each represented by a 64-dimensional vector
+    // This could represent word embeddings, image patches, or any other sequence data
+    // Values are randomly initialized between -1 and 1 for this example
+    input := make(attention.Matrix, 3)
+    for i := range input {
+        input[i] = make(attention.Vector, 64)
+        for j := range input[i] {
+            input[i][j] = rand.Float64()*2 - 1
+        }
+    }
 
-output, err := layer.Forward(input)
-if err != nil {
-    log.Fatal(err)
+    // Process the sequence through the transformer layer
+    // The transformer will:
+    // 1. Apply self-attention to capture relationships between tokens
+    // 2. Process through a feed-forward network
+    // 3. Apply layer normalization and residual connections
+    if output, err := layer.Forward(input); err != nil {
+        log.Fatal(err)
+    } else {
+        // Compare the first 4 dimensions of input and output
+        // to see how the transformer has modified the sequence
+        fmt.Printf("Input (first 4 dims): %v\nOutput (first 4 dims): %v\n",
+            input[0][:4], output[0][:4])
+    }
 }
 ```
 
