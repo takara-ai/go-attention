@@ -4,12 +4,6 @@
 
 From the Frontier Research Team at takara.ai we present the first pure Go implementation of attention mechanisms and transformer layers, designed for high performance and ease of use.
 
-## Installation
-
-```bash
-go get github.com/takara-ai/go-attention
-```
-
 ## Quick Start
 
 Run our comprehensive examples:
@@ -190,7 +184,7 @@ When running the examples, you'll see:
 - Batch processing for better throughput
 - No external dependencies
 
-For more detailed examples, see `api_examples.go` in the repository.
+For more detailed examples, see the `examples` directory in the repository.
 
 ## Why go-attention?
 
@@ -237,7 +231,6 @@ The module provides a foundation for building various attention-based systems:
 
 ## Features
 
-- Pure Go implementation with no external dependencies
 - Efficient dot-product attention mechanism
 - Multi-head attention support
 - Full transformer layer implementation with:
@@ -245,8 +238,6 @@ The module provides a foundation for building various attention-based systems:
   - Position-wise feed-forward networks
   - Residual connections
 - Batched operations for improved performance
-- Comprehensive error handling
-- Example code for quick start
 
 ## Roadmap
 
