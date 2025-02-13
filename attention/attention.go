@@ -11,6 +11,10 @@ type Vector []float64
 // Matrix represents a 2D slice of float64 values
 type Matrix []Vector
 
+// i is the representation of the query
+// j is the representation of the key
+// k is the representation of the value
+
 // DotProduct computes the dot product of two vectors
 func DotProduct(v1, v2 Vector) (float64, error) {
 	if len(v1) != len(v2) {
@@ -111,3 +115,8 @@ func DotProductAttention(query Vector, keys, values Matrix) (Vector, Vector, err
 
 	return attended, weights, nil
 } 
+
+// TODO: kv caching
+// TODO: tokenization support
+// TODO: rotary positional embedding support RoPE
+// TODO: SwarmFormer Local-Global Hiearchical Attention Support
