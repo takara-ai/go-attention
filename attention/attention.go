@@ -35,6 +35,7 @@ func Softmax(x Vector) Vector {
 	}
 
 	maxVal := x[0]
+	// Find max value for numerical stability
 	for _, v := range x[1:] {
 		if v > maxVal {
 			maxVal = v
@@ -44,14 +45,21 @@ func Softmax(x Vector) Vector {
 	exps := make(Vector, len(x))
 	sumExp := 0.0
 	for i, v := range x {
+		// Subtracting maxVal before exponentiation
 		exps[i] = math.Exp(v - maxVal)
 		sumExp += exps[i]
 	}
 
-	// Normalize
-	invSum := 1.0 / sumExp
+	// Handle sumExp == 0 case to prevent NaN (division by zero)
+	// This can happen if all inputs are extremely small negative numbers.
+	if sumExp == 0 {
+		// Return a zero vector. It's already initialized with zeros implicitly by make
+		return exps 
+	}
+
+	// Normalize: Use direct division instead of multiplying by inverse
 	for i := range exps {
-		exps[i] *= invSum
+		exps[i] /= sumExp
 	}
 	
 	return exps
@@ -83,33 +91,78 @@ func AddVectors(v1, v2 Vector) (Vector, error) {
 // query: [d_k], keys: [n, d_k], values: [n, d_v]
 // Returns: attended vector [d_v] and attention weights [n]
 func DotProductAttention(query Vector, keys, values Matrix) (Vector, Vector, error) {
-	if len(keys) != len(values) {
-		return nil, nil, fmt.Errorf("number of keys (%d) must match number of values (%d)", len(keys), len(values))
-	}
-	if len(keys) == 0 {
-		return nil, nil, fmt.Errorf("empty keys and values")
+	n := len(keys)
+	if n == 0 {
+        // If keys are empty, check if values exist to determine output dimension d_v
+        if len(values) > 0 && len(values[0]) > 0 {
+            d_v := len(values[0])
+            // Return empty weights and a zero vector of the correct value dimension
+            return make(Vector, d_v), Vector{}, nil 
+        }
+		// If both keys and values are empty (or values have zero dimension), return error or nil vectors
+		return nil, nil, fmt.Errorf("empty keys and values provided")
 	}
 
+    // Basic dimension validation before proceeding
+	if len(values) != n {
+		return nil, nil, fmt.Errorf("number of keys (%d) must match number of values (%d)", n, len(values))
+	}
+    if len(values[0]) == 0 {
+        return nil, nil, fmt.Errorf("value dimension (d_v) cannot be zero")
+    }
+	d_v := len(values[0]) // Dimension of value vectors
+
+    // Determine key dimension (d_k) safely
+    d_k := len(query)
+    if n > 0 && len(keys[0]) != d_k {
+         // Check the first key's dimension against the query dimension
+         return nil, nil, fmt.Errorf("query dimension (%d) must match key dimension (%d)", d_k, len(keys[0]))
+    }
+
+
 	// Compute attention scores
-	scores := make(Vector, len(keys))
+	scores := make(Vector, n)
+    
+    // Pre-calculate scaling factor only if d_k > 0 to avoid division by zero or sqrt of zero
+    scale := 1.0
+    if d_k > 0 {
+        scale = 1.0 / math.Sqrt(float64(d_k))
+    } // If d_k is 0, scale remains 1.0, dot product will likely be 0 unless vectors are empty.
+
 	for i, key := range keys {
-		score, err := DotProduct(query, key)
+        // Ensure consistent key dimensions within the loop
+        if len(key) != d_k {
+             return nil, nil, fmt.Errorf("key dimension mismatch at index %d: expected %d, got %d", i, d_k, len(key))
+        }
+		score, err := DotProduct(query, key) // DotProduct already checks len(query) == len(key)
 		if err != nil {
-			return nil, nil, fmt.Errorf("computing attention score: %w", err)
+			// This error should theoretically not happen if the outer checks pass, but handle defensively.
+			return nil, nil, fmt.Errorf("error computing dot product for key %d: %w", i, err)
 		}
 		// Scale by sqrt(d_k) for better gradient flow
-		scores[i] = score / math.Sqrt(float64(len(key)))
+		scores[i] = score * scale // Use pre-calculated scale
 	}
 
 	// Apply softmax to get attention weights
 	weights := Softmax(scores)
 
 	// Compute weighted sum of values
-	dim := len(values[0])
-	attended := make(Vector, dim)
+	attended := make(Vector, d_v) // Use d_v determined earlier
 	for i, weight := range weights {
-		for j := 0; j < dim; j++ {
-			attended[j] += weight * values[i][j]
+        // Ensure consistent value dimensions within the loop
+        if len(values[i]) != d_v {
+             return nil, nil, fmt.Errorf("value dimension mismatch at index %d: expected %d, got %d", i, d_v, len(values[i]))
+        }
+
+        // Optimization: Skip summation if weight is zero
+        if weight == 0 {
+            continue
+        }
+
+		// Fuse the scaling by weight into the accumulation loop
+		valueVec := values[i] // Local ref might help optimizer, maybe minor
+		for j := 0; j < d_v; j++ { // Iterate up to d_v
+			attended[j] += weight * valueVec[j]
 		}
 	}
 
