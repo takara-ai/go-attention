@@ -143,7 +143,32 @@ func DotProductAttention(query Vector, keys, values Matrix) (Vector, Vector, err
 		scores[i] = score * scale // Use pre-calculated scale
 	}
 
-	// Apply softmax to get attention weights
+	// --- SSMax Modification (s=1) ---
+	// Calculate log n (natural logarithm of sequence length)
+	// If n=0 or n=1, log_n is handled to avoid issues. log(1)=0 is mathematically correct per formula.
+	log_n := 0.0 
+	if n > 1 {
+		log_n = math.Log(float64(n))
+	} else if n == 1 {
+		// For n=1, log(1)=0. Softmax of a single element scaled by 0 is still undefined 
+		// in the standard implementation, but mathematically should result in a weight of 1.
+		// The existing Softmax handles single elements correctly, so scaling by 0 is fine.
+		// Alternatively, we could set log_n = 1.0 to effectively bypass SSMax scaling for n=1.
+		// Let's stick to the formula log_n = 0 for n=1.
+		log_n = 0.0 
+	}
+	
+	// Multiply scores by log n
+	// Avoid modifying if log_n is effectively 1 (e.g., if n == math.E, though unlikely)
+	// Or if log_n is 0 (when n=1), scaling is identity or zeroing.
+	if n > 1 { // Only scale if n > 1, otherwise log_n is 0
+		for i := range scores {
+			scores[i] *= log_n
+		}
+	}
+	// --- End SSMax Modification ---
+
+	// Apply softmax to get attention weights (now using SSMax-modified scores)
 	weights := Softmax(scores)
 
 	// Compute weighted sum of values
