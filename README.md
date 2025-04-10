@@ -198,7 +198,7 @@ This module was created to provide a clean, efficient, and dependency-free imple
 
 ## Features
 
-- Efficient dot-product attention mechanism
+- Efficient dot-product attention mechanism (upgraded with Scalable-Softmax (SSMax, s=1) for improved long-context performance)
 - Multi-head attention support
 - Full transformer layer implementation with:
   - Layer normalization
