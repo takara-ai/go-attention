@@ -31,10 +31,10 @@ type MultiHeadAttention struct {
 // NewMultiHeadAttention creates a new multi-head attention module
 func NewMultiHeadAttention(config MultiHeadConfig) (*MultiHeadAttention, error) {
 	if config.NumHeads <= 0 {
-		return nil, fmt.Errorf("number of heads must be positive, got %d", config.NumHeads)
+		return nil, fmt.Errorf("invalid config: heads=%d (must be positive)", config.NumHeads)
 	}
 	if config.DModel <= 0 {
-		return nil, fmt.Errorf("model dimension must be positive, got %d", config.DModel)
+		return nil, fmt.Errorf("invalid config: model_dim=%d (must be positive)", config.DModel)
 	}
 	if config.DModel%config.NumHeads != 0 {
 		return nil, fmt.Errorf("model dimension (%d) must be divisible by number of heads (%d)", config.DModel, config.NumHeads)
@@ -68,6 +68,8 @@ func NewMultiHeadAttention(config MultiHeadConfig) (*MultiHeadAttention, error) 
 
 // Forward computes multi-head attention
 // query, key, value: [batch_size, seq_len, d_model]
+// Performance: O(batch_size * num_heads * seq_len * d_model)
+// Note: For large batches, consider pre-allocating matrices
 func (mha *MultiHeadAttention) Forward(query, key, value Matrix) (Matrix, error) {
 	batchSize := len(query)
 	if batchSize != len(key) || batchSize != len(value) {
@@ -125,6 +127,12 @@ func (mha *MultiHeadAttention) Forward(query, key, value Matrix) (Matrix, error)
 	}
 
 	return output, nil
+}
+
+// String returns a string representation of the MultiHeadAttention
+func (mha *MultiHeadAttention) String() string {
+	return fmt.Sprintf("MultiHeadAttention(heads=%d, model_dim=%d, key_dim=%d, value_dim=%d)", 
+		mha.config.NumHeads, mha.config.DModel, mha.config.DKey, mha.config.DValue)
 }
 
 // Helper functions

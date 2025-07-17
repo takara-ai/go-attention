@@ -11,11 +11,20 @@ type Vector []float64
 // Matrix represents a 2D slice of float64 values
 type Matrix []Vector
 
+// AttentionWeights represents attention weights for clarity
+type AttentionWeights = Vector
+
+// Constants for numerical stability
+const (
+	DefaultEpsilon = 1e-5 // For numerical stability in softmax
+)
+
 // i is the representation of the query
 // j is the representation of the key
 // k is the representation of the value
 
 // DotProduct computes the dot product of two vectors
+// Performance: O(d) where d=len(v1)
 func DotProduct(v1, v2 Vector) (float64, error) {
 	if len(v1) != len(v2) {
 		return 0, fmt.Errorf("vector dimensions mismatch: %d != %d", len(v1), len(v2))
@@ -28,7 +37,18 @@ func DotProduct(v1, v2 Vector) (float64, error) {
 	return sum, nil
 }
 
+// DotProductUnsafe computes dot product without bounds checking
+// Assumes equal lengths - use only when you're certain
+func DotProductUnsafe(v1, v2 Vector) float64 {
+	sum := 0.0
+	for i := range v1 {
+		sum += v1[i] * v2[i]
+	}
+	return sum
+}
+
 // Softmax applies the softmax function to a vector
+// Performance: O(n) where n=len(x)
 func Softmax(x Vector) Vector {
 	if len(x) == 0 {
 		return Vector{}
@@ -90,7 +110,10 @@ func AddVectors(v1, v2 Vector) (Vector, error) {
 // DotProductAttention computes scaled dot-product attention
 // query: [d_k], keys: [n, d_k], values: [n, d_v]
 // Returns: attended vector [d_v] and attention weights [n]
-func DotProductAttention(query Vector, keys, values Matrix) (Vector, Vector, error) {
+// Performance: O(n*d_k + n*d_v) where n=len(keys), d_k=len(query), d_v=len(values[0])
+// Memory: O(n) for attention weights
+// Consider using BatchDotProductAttention for multiple queries
+func DotProductAttention(query Vector, keys, values Matrix) (Vector, AttentionWeights, error) {
 	n := len(keys)
 	if n == 0 {
         // If keys are empty, check if values exist to determine output dimension d_v
@@ -105,7 +128,7 @@ func DotProductAttention(query Vector, keys, values Matrix) (Vector, Vector, err
 
     // Basic dimension validation before proceeding
 	if len(values) != n {
-		return nil, nil, fmt.Errorf("number of keys (%d) must match number of values (%d)", n, len(values))
+		return nil, nil, fmt.Errorf("dimension mismatch: %d keys vs %d values (expected equal)", n, len(values))
 	}
     if len(values[0]) == 0 {
         return nil, nil, fmt.Errorf("value dimension (d_v) cannot be zero")
@@ -193,6 +216,21 @@ func DotProductAttention(query Vector, keys, values Matrix) (Vector, Vector, err
 
 	return attended, weights, nil
 } 
+
+// validateMatrixDimensions validates that all matrices have the same number of rows
+func validateMatrixDimensions(matrices ...Matrix) error {
+	if len(matrices) == 0 {
+		return nil
+	}
+	
+	firstDim := len(matrices[0])
+	for i, m := range matrices {
+		if len(m) != firstDim {
+			return fmt.Errorf("matrix %d has %d rows, expected %d", i, len(m), firstDim)
+		}
+	}
+	return nil
+}
 
 // TODO: kv caching
 // TODO: tokenization support
