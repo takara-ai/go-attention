@@ -212,7 +212,6 @@ Future improvements may include:
 
 - Positional encoding implementations
 - Dropout support
-- CUDA acceleration support
 - Additional transformer variants
 - Pre-trained models
 - Training utilities
