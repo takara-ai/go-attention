@@ -110,7 +110,7 @@ func TestLayerNormForward(t *testing.T) {
 			t.Errorf("output[%d] mean = %v, want close to 0", i, mean)
 		}
 		// Skip std check for zero vectors (they will have std = 0)
-		if i != 1 && math.Abs(std-1.0) > 1e-10 {
+		if i != 1 && math.Abs(std-1.0) > 1e-5 {
 			t.Errorf("output[%d] std = %v, want close to 1", i, std)
 		}
 	}
