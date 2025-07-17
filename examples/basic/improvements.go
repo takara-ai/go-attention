@@ -36,12 +36,12 @@ func demoPerformanceHints() {
 	v1 := attention.Vector{1.0, 2.0, 3.0, 4.0}
 	v2 := attention.Vector{5.0, 6.0, 7.0, 8.0}
 
-	// Safe version (with bounds checking)
+	// Canonical version (with bounds checking)
 	result, err := attention.DotProduct(v1, v2)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Safe DotProduct: %v\n", result)
+	fmt.Printf("DotProduct: %v\n", result)
 
 	// Unsafe version (faster, assumes equal lengths)
 	resultUnsafe := attention.DotProductUnsafe(v1, v2)

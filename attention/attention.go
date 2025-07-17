@@ -26,25 +26,54 @@ const (
 // DotProduct computes the dot product of two vectors
 // Performance: O(d) where d=len(v1)
 func DotProduct(v1, v2 Vector) (float64, error) {
+	return bestDotProduct(v1, v2)
+}
+
+// BestDotProduct is an alias for DotProduct for API clarity
+func BestDotProduct(v1, v2 Vector) (float64, error) {
+	return DotProduct(v1, v2)
+}
+
+// bestDotProduct is the single, canonical implementation
+func bestDotProduct(v1, v2 Vector) (float64, error) {
 	if len(v1) != len(v2) {
 		return 0, fmt.Errorf("vector dimensions mismatch: %d != %d", len(v1), len(v2))
 	}
-	
+	// Loop unrolling for performance
 	sum := 0.0
-	for i := range v1 {
+	n := len(v1)
+	for i := 0; i < n-7; i += 8 {
+		sum += v1[i]*v2[i] + v1[i+1]*v2[i+1] + v1[i+2]*v2[i+2] + v1[i+3]*v2[i+3] +
+			v1[i+4]*v2[i+4] + v1[i+5]*v2[i+5] + v1[i+6]*v2[i+6] + v1[i+7]*v2[i+7]
+	}
+	for i := (n/8)*8; i < n; i++ {
 		sum += v1[i] * v2[i]
 	}
 	return sum, nil
 }
 
-// DotProductUnsafe computes dot product without bounds checking
-// Assumes equal lengths - use only when you're certain
+// Deprecated: Use DotProduct instead.
 func DotProductUnsafe(v1, v2 Vector) float64 {
 	sum := 0.0
 	for i := range v1 {
 		sum += v1[i] * v2[i]
 	}
 	return sum
+}
+
+// Deprecated: Use DotProduct instead.
+func DotProductPooled(v1, v2 Vector) (float64, error) {
+	return DotProduct(v1, v2)
+}
+
+// Deprecated: Use DotProduct instead.
+func DotProductParallel(v1, v2 Vector, config interface{}) (float64, error) {
+	return DotProduct(v1, v2)
+}
+
+// Deprecated: Use DotProduct instead.
+func DotProductOptimized(v1, v2 Vector) (float64, error) {
+	return DotProduct(v1, v2)
 }
 
 // Softmax applies the softmax function to a vector
@@ -114,6 +143,16 @@ func AddVectors(v1, v2 Vector) (Vector, error) {
 // Memory: O(n) for attention weights
 // Consider using BatchDotProductAttention for multiple queries
 func DotProductAttention(query Vector, keys, values Matrix) (Vector, AttentionWeights, error) {
+	return bestDotProductAttention(query, keys, values)
+}
+
+// BestDotProductAttention is an alias for DotProductAttention
+func BestDotProductAttention(query Vector, keys, values Matrix) (Vector, AttentionWeights, error) {
+	return DotProductAttention(query, keys, values)
+}
+
+// bestDotProductAttention is the single, canonical implementation
+func bestDotProductAttention(query Vector, keys, values Matrix) (Vector, AttentionWeights, error) {
 	n := len(keys)
 	if n == 0 {
         // If keys are empty, check if values exist to determine output dimension d_v
@@ -230,7 +269,7 @@ func validateMatrixDimensions(matrices ...Matrix) error {
 		}
 	}
 	return nil
-}
+} 
 
 // TODO: kv caching
 // TODO: tokenization support

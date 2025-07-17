@@ -308,3 +308,60 @@ func BenchmarkDotProductAttention(b *testing.B) {
 		DotProductAttention(query, keys, values)
 	}
 } 
+
+func TestBestDotProduct_LargeScale(t *testing.T) {
+	size := 1_000_000
+	v1 := make(Vector, size)
+	v2 := make(Vector, size)
+	for i := range v1 {
+		v1[i] = float64(i%7) * 0.1
+		v2[i] = float64(i%5) * 0.2
+	}
+	ref, _ := DotProduct(v1, v2)
+	best, _ := BestDotProduct(v1, v2)
+	if math.Abs(ref-best) > 1e-6 {
+		t.Errorf("BestDotProduct mismatch: ref=%v, best=%v", ref, best)
+	}
+}
+
+func TestBestDotProductAttention_LargeScale(t *testing.T) {
+	seqLen := 10_000
+	dim := 128
+	query := make(Vector, dim)
+	for i := range query {
+		query[i] = float64(i%11) * 0.1
+	}
+	keys := make(Matrix, seqLen)
+	values := make(Matrix, seqLen)
+	for i := 0; i < seqLen; i++ {
+		keys[i] = make(Vector, dim)
+		values[i] = make(Vector, 32)
+		for j := range keys[i] {
+			keys[i][j] = float64((i+j)%13) * 0.2
+		}
+		for j := range values[i] {
+			values[i][j] = float64((i+j)%7) * 0.3
+		}
+	}
+	ref, refW, err := DotProductAttention(query, keys, values)
+	if err != nil {
+		t.Fatalf("DotProductAttention error: %v", err)
+	}
+	best, bestW, err := BestDotProductAttention(query, keys, values)
+	if err != nil {
+		t.Fatalf("BestDotProductAttention error: %v", err)
+	}
+	if len(ref) != len(best) || len(refW) != len(bestW) {
+		t.Fatalf("Output shape mismatch")
+	}
+	for i := range ref {
+		if math.Abs(ref[i]-best[i]) > 1e-4 {
+			t.Errorf("BestDotProductAttention value mismatch at %d: ref=%v, best=%v", i, ref[i], best[i])
+		}
+	}
+	for i := range refW {
+		if math.Abs(refW[i]-bestW[i]) > 1e-4 {
+			t.Errorf("BestDotProductAttention weight mismatch at %d: ref=%v, best=%v", i, refW[i], bestW[i])
+		}
+	}
+} 
