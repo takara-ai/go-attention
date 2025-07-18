@@ -64,6 +64,8 @@ result, err := attention.DotProduct(v1, v2)
 
 ## API Documentation
 
+For complete API documentation, see [API.md](API.md).
+
 ### Core Types
 
 ```go
@@ -71,7 +73,9 @@ type Vector []float64           // Represents a 1D vector of float64 values
 type Matrix []Vector           // Represents a 2D matrix of float64 values
 ```
 
-### 1. Basic Dot-Product Attention
+### Quick Examples
+
+#### 1. Basic Dot-Product Attention
 
 The simplest form of attention mechanism. Useful for basic sequence processing tasks.
 
@@ -101,7 +105,7 @@ if err != nil {
 // Weights will show how much attention each key received
 ```
 
-### 2. Multi-Head Attention
+#### 2. Multi-Head Attention
 
 More sophisticated attention mechanism that can capture different types of relationships in parallel.
 
@@ -140,7 +144,7 @@ if err != nil {
 }
 ```
 
-### 3. Full Transformer Layer
+#### 3. Full Transformer Layer
 
 Complete transformer layer with self-attention and feed-forward network.
 
