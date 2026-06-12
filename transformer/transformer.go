@@ -186,9 +186,13 @@ func projectVector(input attention.Vector, weights attention.Matrix) (attention.
 	}
 
 	output := make(attention.Vector, len(weights[0]))
-	for i := range weights[0] {
-		for j, w := range weights {
-			output[i] += input[j] * w[i]
+	for j, w := range weights {
+		inputJ := input[j]
+		if inputJ == 0 {
+			continue
+		}
+		for i, wij := range w {
+			output[i] += inputJ * wij
 		}
 	}
 	return output, nil

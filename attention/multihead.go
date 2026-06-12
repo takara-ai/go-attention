@@ -170,9 +170,13 @@ func projectVector(input Vector, weights Matrix) (Vector, error) {
 	}
 
 	output := make(Vector, len(weights[0]))
-	for i := range weights[0] {
-		for j, w := range weights {
-			output[i] += input[j] * w[i]
+	for j, w := range weights {
+		inputJ := input[j]
+		if inputJ == 0 {
+			continue
+		}
+		for i, wij := range w {
+			output[i] += inputJ * wij
 		}
 	}
 	return output, nil
