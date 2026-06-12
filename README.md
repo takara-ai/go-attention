@@ -50,10 +50,10 @@ Our implementation uses a single, highly optimized code path that delivers predi
 result, err := attention.DotProduct(v1, v2)
 ```
 
-**Performance Results:**
-- **Small vectors (64-256)**: ~30-100ns per operation
-- **Medium vectors (512-1024)**: ~400-1700ns per operation  
-- **Large vectors (2048+)**: ~1600ns+ per operation
+**Performance Results** (Apple M1, `go test -bench=. ./attention`):
+- **Small vectors (64-256)**: ~17-62ns per dot product
+- **Medium vectors (512-1024)**: ~250-290ns per dot product
+- **Large vectors (4096+)**: ~970-1230ns per dot product
 - **Consistent across all hardware**: Same performance characteristics on any Go-compatible platform
 
 ### **Production-Grade Reliability**
@@ -232,7 +232,7 @@ When running the examples, you'll see:
 ### **Built-in Optimizations**
 - **Loop Unrolling**: 8x unrolled dot product for maximum throughput
 - **Memory Pooling**: Object pools reduce allocation overhead in hot paths
-- **Cache-Friendly**: Optimized memory access patterns
+- **Cache-Friendly Projections**: `projectVector` uses row-major loop order so weight rows are read sequentially (fixes column-major stride that caused cache misses on Q/K/V and feed-forward matmuls)
 - **Zero Dependencies**: Pure Go implementation with no external requirements
 
 ### **Production Monitoring**
@@ -294,16 +294,32 @@ config.NumWorkers = runtime.NumCPU()
 Run comprehensive performance benchmarks:
 
 ```bash
-go test -bench=. ./attention
+go test -bench=. ./attention ./transformer
 ```
 
 This will benchmark all operations and show performance characteristics across different input sizes and hardware configurations.
 
-**Sample Results:**
+**Sample Results** (Apple M1, June 2026):
+
 ```
-BenchmarkDotProduct-8                   154059886                7.747 ns/op
-BenchmarkDotProductAttention-8           6989079               170.7 ns/op
-BenchmarkMultiHeadAttentionForward-8        6178            192052 ns/op
+BenchmarkDotProduct-8                      253631955          4.7 ns/op
+BenchmarkDotProductAttention-8            12874644         93.0 ns/op
+BenchmarkMultiHeadAttentionForward-8         19830         61.9 µs/op   (was ~192 µs/op, ~3.1x faster)
+BenchmarkFeedForwardForward-8                10000        122.2 µs/op
+BenchmarkTransformerLayerForward-8            2714        442.6 µs/op
+```
+
+`BenchmarkMultiHeadAttentionForward` improved ~3.1x after fixing `projectVector` loop order (#8). Feed-forward and full transformer layers benefit from the same change. On the projection hot path alone (`d_model=768`, `d_k=96`), row-major access is **~8x faster** than the previous column-major stride:
+
+```
+BenchmarkIssue8_ProjectVectorColumnMajor/768x96-8     ~270 µs/op
+BenchmarkIssue8_ProjectVectorRowMajor/768x96-8         ~34 µs/op
+```
+
+Reproduce with:
+
+```bash
+go test ./attention -bench='Issue8' -benchmem
 ```
 
 ## Roadmap
